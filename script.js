@@ -4,6 +4,22 @@ const clickSfx = document.getElementById('clickSfx');
 
 let current = 0;
 
+const bgMusic = document.getElementById('bgMusic');
+let musicStarted = false;
+
+function startMusic() {
+  if (musicStarted || !bgMusic) return;
+
+  bgMusic.volume = 0.6; // soft
+  bgMusic.play().catch(() => {});
+  musicStarted = true;
+}
+
+// start music on first real interaction
+document.addEventListener('click', startMusic, { once: true });
+document.addEventListener('touchstart', startMusic, { once: true });
+
+
 /* ---------- SLIDE SWITCH ---------- */
 function goToSlide(i) {
     if (i < 0 || i >= slides.length) return;
@@ -19,6 +35,7 @@ function goToSlide(i) {
   
       // ✅ THIS IS THE KEY LINE
       updateYesCursor();
+      handleMusicForSlide();
     }, 400);
   }
   
@@ -153,4 +170,67 @@ document.addEventListener('mousedown', () => {
 
 document.addEventListener('mouseup', () => {
   cuteCursor.style.transform = 'translate(-50%, -50%) scale(1)';
+});
+
+const music = document.getElementById('music');
+const musicBtn = document.getElementById('musicBtn');
+const icon = musicBtn.querySelector('.icon');
+
+let playing = false;
+
+musicBtn.addEventListener('click', e => {
+  e.stopPropagation();
+
+  if (!playing) {
+    music.volume = 0;
+    music.play().catch(() => {});
+    fadeAudio(music, { from: 0, to: 0.6, duration: 1800 });
+
+    icon.textContent = '🔊';
+    musicBtn.classList.add('playing');
+  } else {
+    fadeAudio(music, {
+      from: music.volume,
+      to: 0,
+      duration: 1200,
+      onComplete: () => music.pause()
+    });
+
+    icon.textContent = '🔇';
+    musicBtn.classList.remove('playing');
+  }
+
+  playing = !playing;
+});
+
+
+function handleMusicForSlide() {
+  const isLastSlide = slides[current].classList.contains('love-slide');
+
+  if (isLastSlide && !bgMusic.paused) {
+    // soft fade out
+    let vol = bgMusic.volume;
+    const fadeOut = setInterval(() => {
+      vol -= 0.02;
+      bgMusic.volume = Math.max(vol, 0);
+      if (vol <= 0) {
+        bgMusic.pause();
+        bgMusic.currentTime = 0;
+        clearInterval(fadeOut);
+      }
+    }, 120);
+  }
+}
+
+
+document.addEventListener('click', function startMusicOnce() {
+  if (!playing) {
+    music.volume = 0;
+    music.play().catch(() => {});
+    fadeAudio(music, { from: 0, to: 0.4, duration: 2500 });
+    playing = true;
+    musicBtn.classList.add('playing');
+    musicBtn.querySelector('.icon').textContent = '🔊';
+  }
+  document.removeEventListener('click', startMusicOnce);
 });
